@@ -2,39 +2,49 @@
 
 ## 1. Khách hàng (KHACHHANG)
 Quản lý thông tin người mua để chăm sóc và liên hệ.
-* **MaKH**: Mã định danh duy nhất phân biệt từng khách.
-* **TenKH**, **SoDienThoai**, **Email**, **DiaChi**: Thông tin liên lạc cơ bản.
-* **DiemTichLuy**: Điểm thưởng khi mua hàng dùng cho các chương trình khách hàng thân thiết.
+* **MaKH**: Mã định danh duy nhất (Primary Key), tự động tăng.
+* **TenKH**: Họ và tên khách hàng.
+* **SoDienThoai**: Số điện thoại liên lạc (Unique - duy nhất).
+* **Email**: Địa chỉ email (Unique - duy nhất).
+* **DiaChi**: Địa chỉ cư trú hoặc giao hàng.
+* **DiemTichLuy**: Điểm thưởng tích lũy được từ các đơn hàng đã mua.
 
 ## 2. Sản phẩm (SANPHAM)
-Lưu trữ danh sách mặt hàng đang kinh doanh.
-* **MaSP**: Mã định danh duy nhất của sản phẩm.
-* **TenSP**: Tên hiển thị của sản phẩm.
-* **MaSKU**: Mã vạch hoặc mã phân loại nội bộ (Stock Keeping Unit).
-* **MaDanhMuc**: Mã chỉ định sản phẩm thuộc nhóm hàng nào (ví dụ: Áo Nam, Quần Nữ, Phụ Kiện).
-* **GiaBan**: Giá bán niêm yết hiện tại.
+Lưu trữ danh sách mặt hàng sách đang kinh doanh.
+* **MaSP**: Mã định danh duy nhất của sản phẩm (Primary Key).
+* **TenSP**: Tên tiêu đề sách.
+* **MaSKU**: Mã quản lý kho riêng biệt cho từng đầu sách.
+* **MaDanhMuc**: Phân loại sách (Văn học, Kinh tế, Khoa học, Thiếu nhi...).
+* **GiaBan**: Giá niêm yết của một cuốn sách.
+* **MoTa**: Nội dung tóm tắt hoặc thông tin chi tiết về cuốn sách.
 
 ## 3. Khuyến mãi (KHUYENMAI)
-Quản lý các voucher, chiến dịch ưu đãi.
-* **MaKM**: Mã hệ thống dùng để quản lý chiến dịch.
-* **MaCode**: Chuỗi ký tự khách hàng nhập để áp dụng ưu đãi (ví dụ: GIAM50K, BLACKFRIDAY).
-* **GiaTriGiam**: Mức ưu đãi (có thể là tiền mặt hoặc %).
-* **NgayBatDau**, **NgayKetThuc**: Thời hạn có hiệu lực của mã giảm giá.
+Quản lý các mã giảm giá và chương trình ưu đãi.
+* **MaKM**: Mã quản lý hệ thống (Primary Key).
+* **MaCode**: Mã định danh voucher khách nhập (ví dụ: KM50K, SUMMER).
+* **TenChuongTrinh**: Tên gọi của chiến dịch khuyến mãi.
+* **GiaTriGiam**: Số tiền hoặc giá trị được giảm trừ.
+* **NgayBatDau**: Ngày chương trình bắt đầu có hiệu lực.
+* **NgayKetThuc**: Ngày hết hạn chương trình.
 
 ## 4. Đơn hàng (DONHANG)
-Ghi nhận tổng quan về một lần giao dịch của khách.
-* **MaDH**: Mã số duy nhất của hóa đơn.
-* **MaKH**, **MaKM**: Liên kết để biết đơn hàng này của khách nào và có áp dụng mã khuyến mãi nào không.
-* **NgayDat**, **KenhBanHang**: Thời điểm và nơi chốt đơn (Web/Shopee/Tại quầy).
-* **TrangThaiThanhToan**: Theo dõi việc khách đã trả tiền hay chưa.
-* **TongTienHang**: Tổng cộng tiền các món hàng (chưa trừ ưu đãi) — Trigger tự động tính từ CHITIETDONHANG.
-* **SoTienGiam**: Số tiền được trừ đi nhờ áp dụng mã MaKM.
-* **ThanhTien**: Số tiền cuối cùng thực tế khách phải trả — Trigger tự động tính = TongTienHang - SoTienGiam.
+Ghi nhận thông tin tổng quát của một giao dịch.
+* **MaDH**: Mã hóa đơn duy nhất (Primary Key).
+* **MaKH**: Liên kết với khách hàng thực hiện mua (Foreign Key).
+* **MaKM**: Mã khuyến mãi được áp dụng cho đơn (Foreign Key - có thể NULL).
+* **NgayDat**: Thời điểm tạo đơn hàng.
+* **KenhBanHang**: Nơi phát sinh đơn (TAI_QUAY, WEBSITE, SHOPEE, LAZADA, TIKTOK_SHOP).
+* **TrangThaiThanhToan**: Tình trạng tiền bạc (CHUA_THANH_TOAN, DA_THANH_TOAN, HOAN_TIEN, HUY).
+* **TongTienHang**: Tổng tiền các sản phẩm trước khi giảm giá (Trigger tự động tính).
+* **SoTienGiam**: Tổng số tiền được giảm trừ từ mã khuyến mãi.
+* **ThanhTien**: Số tiền thực tế khách phải trả (Trigger tự động tính = TongTienHang - SoTienGiam).
+* **GhiChu**: Các yêu cầu đặc biệt của khách (Giao giờ hành chính, gói quà...).
 
 ## 5. Chi tiết đơn hàng (CHITIETDONHANG)
-Liệt kê chi tiết bên trong một đơn hàng khách đã mua những mặt hàng cụ thể nào (vì một đơn có thể chứa nhiều mặt hàng khác nhau).
-* **MaCTDH**: Định danh cho từng dòng chi tiết trong giỏ hàng.
-* **MaDH**, **MaSP**: Cho biết dòng này thuộc hóa đơn nào và mua sản phẩm gì.
-* **SoLuong**: Khách mua mấy cái cho mặt hàng này.
-* **DonGia**: Giá của mặt hàng được chốt ngay tại lúc tạo đơn (snapshot — không đổi khi giá SP thay đổi sau).
-* **GiamGia**: Mức giảm trực tiếp ngay trên mặt hàng đó (nếu cửa hàng có chương trình sale riêng cho sản phẩm, độc lập với voucher toàn đơn).
+Lưu thông tin cụ thể từng mặt hàng trong một đơn hàng.
+* **MaCTDH**: Mã định danh dòng chi tiết (Primary Key).
+* **MaDH**: Thuộc về đơn hàng nào (Foreign Key).
+* **MaSP**: Sản phẩm nào được mua (Foreign Key).
+* **SoLuong**: Số lượng cuốn sách khách mua cho sản phẩm đó.
+* **DonGia**: Giá bán của sản phẩm tại thời điểm chốt đơn.
+* **GiamGia**: Số tiền giảm trực tiếp trên mỗi đơn vị sản phẩm (nếu có).

@@ -1,12 +1,59 @@
-# 🛒 Hệ Thống Quản Lý Bán Hàng — SQL Server
+# 📚 Quản Lý Bán Hàng — Cửa Hàng Sách
 
-> **Bài tập lớn môn Cơ sở Dữ liệu** · T-SQL · SQL Server
-
-Hệ thống cơ sở dữ liệu quản lý bán hàng đa kênh (Tại quầy, Website, Shopee, Lazada, TikTok Shop) được thiết kế theo **chuẩn 3NF**, hỗ trợ quản lý khách hàng, sản phẩm, khuyến mãi, đơn hàng và chi tiết đơn hàng với cơ chế **trigger tự động tính toán tài chính**.
+> **Bài tập lớn môn Cơ sở dữ liệu**
+> Hệ thống quản lý bán hàng cho cửa hàng sách, xây dựng trên SQL Server (T-SQL).
 
 ---
 
-## 📐 Sơ Đồ Quan Hệ (ER Diagram)
+## 📋 Mô tả dự án
+
+Dự án xây dựng cơ sở dữ liệu **QL_BANHANG** để quản lý toàn bộ hoạt động kinh doanh của một cửa hàng sách, bao gồm:
+
+- Quản lý **khách hàng** và điểm tích lũy
+- Quản lý **sản phẩm** (sách) theo danh mục
+- Quản lý **chương trình khuyến mãi** (voucher, mã giảm giá)
+- Quản lý **đơn hàng** đa kênh (Tại quầy, Website, Shopee, Lazada, TikTok Shop)
+- Quản lý **chi tiết đơn hàng** cho từng sản phẩm
+- **Trigger tự động** tính tổng tiền hàng và thành tiền
+- **Báo cáo kinh doanh** phân tích doanh thu, sản phẩm, khách hàng
+
+---
+
+## 🗂️ Cấu trúc dự án
+
+| File | Mô tả |
+|------|--------|
+| `01_init_structure.sql` | Tạo database và 5 bảng (chuẩn 3NF) với các constraint |
+| `02_insert_data 1.sql` | Chèn dữ liệu mẫu: 15 khách hàng, 30 sản phẩm, 7 khuyến mãi, 25 đơn hàng, ~75 chi tiết |
+| `03_optimization_logic.sql` | Tạo 9 index tối ưu + 2 trigger tự động tính tiền |
+| `04_business_reports.sql` | 8 báo cáo kinh doanh (doanh thu, sản phẩm, khách hàng, kênh bán...) |
+| `Data.md` | Tài liệu mô tả cấu trúc dữ liệu các bảng |
+| `ER_Diagram_Mermaid.md` | Sơ đồ quan hệ thực thể (Entity-Relationship Diagram) |
+
+---
+
+## 🚀 Hướng dẫn cài đặt & chạy
+
+### Yêu cầu
+
+- **SQL Server** 2016 trở lên (hoặc SQL Server Express)
+- **SQL Server Management Studio (SSMS)** hoặc Azure Data Studio
+
+### Các bước thực hiện
+
+```
+Bước 1:  Mở SSMS, kết nối SQL Server
+Bước 2:  Chạy 01_init_structure.sql      → Tạo database + bảng
+Bước 3:  Chạy 02_insert_data 1.sql       → Chèn dữ liệu mẫu
+Bước 4:  Chạy 03_optimization_logic.sql  → Tạo index + trigger
+Bước 5:  Chạy 04_business_reports.sql    → Xem báo cáo kinh doanh
+```
+
+> ⚠️ **Lưu ý:** Phải chạy theo đúng thứ tự từ file 01 đến 04. Mỗi file phụ thuộc vào kết quả của file trước đó.
+
+---
+
+## 📊 Sơ đồ quan hệ (ER Diagram)
 
 ```mermaid
 erDiagram
@@ -18,21 +65,23 @@ erDiagram
     KHACHHANG {
         int MaKH PK
         string TenKH
-        string SoDienThoai
-        string Email
+        string SoDienThoai UK
+        string Email UK
         string DiaChi
         int DiemTichLuy
     }
     SANPHAM {
         int MaSP PK
         string TenSP
-        string MaSKU
+        string MaSKU UK
         string MaDanhMuc
         decimal GiaBan
+        string MoTa
     }
     KHUYENMAI {
         int MaKM PK
-        string MaCode
+        string MaCode UK
+        string TenChuongTrinh
         decimal GiaTriGiam
         datetime NgayBatDau
         datetime NgayKetThuc
@@ -47,6 +96,7 @@ erDiagram
         decimal TongTienHang
         decimal SoTienGiam
         decimal ThanhTien
+        string GhiChu
     }
     CHITIETDONHANG {
         int MaCTDH PK
@@ -60,99 +110,53 @@ erDiagram
 
 ---
 
-## 🗂️ Cấu Trúc Dự Án
+## 🏗️ Kiến trúc Database
 
-| File | Mô tả |
-|------|--------|
-| `01_init_structure.sql` | Tạo database `QL_BANHANG` và 5 bảng với đầy đủ ràng buộc (PK, FK, UNIQUE, CHECK) |
-| `02_insert_data 1.sql` | Chèn dữ liệu mẫu cho toàn bộ 5 bảng để kiểm thử |
-| `03_optimization_logic.sql` | Tạo 9 chỉ mục tối ưu truy vấn + 2 trigger tự động tính tiền |
-| `Data.md` | Tài liệu giải thích ý nghĩa từng trường dữ liệu |
-| `ER_Diagram_Mermaid.md` | Sơ đồ ER dạng Mermaid (hiển thị trực tiếp trên GitHub) |
+### 5 bảng chính (chuẩn 3NF)
 
----
+| Bảng | Mô tả | Số bản ghi mẫu |
+|------|--------|:-:|
+| **KHACHHANG** | Thông tin khách hàng, điểm tích lũy | 15 |
+| **SANPHAM** | Danh mục sách (Văn học, Kinh tế, Kỹ năng, Thiếu nhi, Khoa học) | 30 |
+| **KHUYENMAI** | Mã giảm giá, chương trình ưu đãi | 7 |
+| **DONHANG** | Đơn hàng tổng hợp, đa kênh bán | 25 |
+| **CHITIETDONHANG** | Chi tiết từng sản phẩm trong đơn | ~75 |
 
-## 🏗️ Mô Tả 5 Bảng
+### Tính năng nổi bật
 
-### 1. KHACHHANG
-Quản lý thông tin khách hàng: họ tên, SĐT, email, địa chỉ và điểm tích lũy cho chương trình khách hàng thân thiết.
-- `SoDienThoai`, `Email`: ràng buộc **UNIQUE** — không trùng lặp
-- `DiemTichLuy`: ràng buộc **CHECK ≥ 0**
-
-### 2. SANPHAM
-Danh mục hàng hóa đang kinh doanh, phân loại theo nhóm (Áo Nam, Quần Nữ, Phụ Kiện...).
-- `MaSKU`: mã kho nội bộ **UNIQUE**
-- `GiaBan`: ràng buộc **CHECK ≥ 0**
-
-### 3. KHUYENMAI
-Quản lý voucher/chiến dịch khuyến mãi với mã code, giá trị giảm và thời hạn hiệu lực.
-- `MaCode`: mã voucher **UNIQUE**
-- `GiaTriGiam > 0`, `NgayKetThuc > NgayBatDau`: đảm bảo dữ liệu hợp lệ
-
-### 4. DONHANG
-Ghi nhận mỗi lần giao dịch — khách nào mua, qua kênh nào, áp mã giảm giá gì.
-- Hỗ trợ **5 kênh bán hàng**: `TAI_QUAY`, `WEBSITE`, `SHOPEE`, `LAZADA`, `TIKTOK_SHOP`
-- Hỗ trợ **4 trạng thái**: `CHUA_THANH_TOAN`, `DA_THANH_TOAN`, `HOAN_TIEN`, `HUY`
-- `ThanhTien` được **trigger tự động tính** = `TongTienHang - SoTienGiam`
-
-### 5. CHITIETDONHANG
-Chi tiết từng sản phẩm trong đơn hàng (số lượng, đơn giá snapshot, giảm giá riêng).
-- Ràng buộc **UNIQUE (MaDH, MaSP)**: mỗi sản phẩm chỉ xuất hiện 1 lần/đơn
-- `DonGia` là giá **snapshot** tại thời điểm mua — không đổi khi giá sản phẩm thay đổi sau
+- ✅ **Constraint đầy đủ**: PRIMARY KEY, FOREIGN KEY, UNIQUE, CHECK, DEFAULT
+- ✅ **9 Index tối ưu** truy vấn: theo khách hàng, ngày đặt, trạng thái, kênh bán, danh mục...
+- ✅ **2 Trigger tự động**:
+  - `TRG_CTDH_CAP_NHAT`: Khi thay đổi chi tiết → cập nhật `TongTienHang` của đơn
+  - `TRG_DH_TINH_THANHTIEN`: Khi `TongTienHang` hoặc `SoTienGiam` đổi → tính `ThanhTien`
+- ✅ **5 kênh bán hàng**: Tại quầy, Website, Shopee, Lazada, TikTok Shop
+- ✅ **4 trạng thái đơn**: Chưa thanh toán, Đã thanh toán, Hoàn tiền, Hủy
 
 ---
 
-## ⚡ Tính Năng Nổi Bật
+## 📈 Danh sách báo cáo (File 04)
 
-### 🔗 Ràng Buộc Toàn Vẹn
-- **ON DELETE NO ACTION** trên FK `DONHANG → KHACHHANG`: bảo vệ lịch sử giao dịch
-- **ON DELETE SET NULL** trên FK `DONHANG → KHUYENMAI`: xóa chương trình KM không ảnh hưởng đơn
-- **ON DELETE CASCADE** trên FK `CHITIETDONHANG → DONHANG`: xóa đơn → dọn sạch chi tiết
-
-### ⚙️ Trigger Tự Động (2 lớp)
-| Trigger | Bảng | Chức năng |
-|---------|------|-----------|
-| `TRG_CTDH_CAP_NHAT` | CHITIETDONHANG | Khi thêm/sửa/xóa chi tiết → tự cập nhật `TongTienHang` của đơn cha |
-| `TRG_DH_TINH_THANHTIEN` | DONHANG | Khi `TongTienHang` hoặc `SoTienGiam` thay đổi → tự tính `ThanhTien` |
-
-### 📊 Chỉ Mục Tối Ưu (9 index)
-Tối ưu cho các truy vấn phổ biến: tìm đơn theo khách, báo cáo doanh thu theo ngày, lọc theo trạng thái thanh toán, phân tích kênh bán hàng, xếp hạng khách VIP...
+| # | Báo cáo | Nội dung |
+|:-:|---------|----------|
+| 1 | **Tổng quan doanh thu** | Tổng đơn, doanh thu, trung bình/đơn, theo ngày, theo tháng |
+| 2 | **Sản phẩm bán chạy** | Top 10 theo số lượng, top 10 theo doanh thu, sản phẩm chưa bán |
+| 3 | **Doanh thu theo danh mục** | So sánh nhóm sách, tỉ trọng đóng góp (%) |
+| 4 | **Phân tích khách hàng** | Top chi tiêu, phân loại VIP/Thân thiết/Tiềm năng/Mới |
+| 5 | **Kênh bán hàng** | So sánh kênh, Online vs Offline |
+| 6 | **Hiệu quả khuyến mãi** | Số đơn áp dụng, tổng giảm giá, tỉ lệ sử dụng KM |
+| 7 | **Trạng thái đơn hàng** | Thống kê trạng thái, danh sách đơn chưa thanh toán |
+| 8 | **Dashboard tổng hợp** | Các chỉ số chính cho giao diện quản lý |
 
 ---
 
-## 🚀 Hướng Dẫn Sử Dụng
+## 📝 Ghi chú
 
-### Yêu cầu
-- **SQL Server** 2016 trở lên (hỗ trợ `CREATE OR ALTER`)
-- **SQL Server Management Studio (SSMS)** hoặc công cụ tương đương
-
-### Chạy script theo thứ tự
-
-```
-Bước 1 → 01_init_structure.sql       (tạo database + 5 bảng)
-Bước 2 → 02_insert_data 1.sql        (chèn dữ liệu mẫu)
-Bước 3 → 03_optimization_logic.sql   (tạo index + trigger + demo)
-```
-
-> ⚠️ **Lưu ý:** Phải chạy đúng thứ tự. Script 01 sẽ **xóa và tạo lại** database `QL_BANHANG` nếu đã tồn tại.
+- Collation: `Vietnamese_CI_AS` — hỗ trợ tiếng Việt có dấu
+- Dữ liệu mẫu mô phỏng cửa hàng sách với 5 danh mục: Văn học, Kinh tế, Kỹ năng, Thiếu nhi, Khoa học
+- Trigger sử dụng chiến lược 2 lớp (CHITIETDONHANG → DONHANG) để đảm bảo tính nhất quán dữ liệu
 
 ---
 
-## 📈 Dữ Liệu Mẫu
+## 📄 License
 
-| Bảng | Số bản ghi |
-|------|-----------|
-| KHACHHANG | 6 |
-| SANPHAM | 8 |
-| KHUYENMAI | 5 |
-| DONHANG | 7 |
-| CHITIETDONHANG | 10 |
-
----
-
-## 🛠️ Công Nghệ
-
-- **Hệ quản trị:** Microsoft SQL Server
-- **Ngôn ngữ:** T-SQL (Transact-SQL)
-- **Collation:** `Vietnamese_CI_AS`
-- **Chuẩn thiết kế:** 3NF (Third Normal Form)
+Dự án được phân phối theo giấy phép MIT — xem file [LICENSE](LICENSE) để biết thêm chi tiết.

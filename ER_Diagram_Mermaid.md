@@ -19,10 +19,12 @@ erDiagram
         string MaSKU
         string MaDanhMuc
         decimal GiaBan
+        string MoTa
     }
     KHUYENMAI {
         int MaKM PK
         string MaCode
+        string TenChuongTrinh
         decimal GiaTriGiam
         datetime NgayBatDau
         datetime NgayKetThuc
@@ -37,6 +39,7 @@ erDiagram
         decimal TongTienHang
         decimal SoTienGiam
         decimal ThanhTien
+        string GhiChu
     }
     CHITIETDONHANG {
         int MaCTDH PK
